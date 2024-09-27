@@ -4,28 +4,36 @@ FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can1;
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> Can2;
 FlexCAN_T4<CAN3, RX_SIZE_256, TX_SIZE_16> Can3;
 
-std::map<uint32_t ,CAN_message_t> buffer_table[3];
-std::vector<CAN_message_t> msg_stack[3];
+std::map<uint32_t ,CAN_message_t> buffer_table1;
+std::vector<CAN_message_t> msg_stack1;
+std::map<uint32_t ,CAN_message_t> buffer_table2;
+std::vector<CAN_message_t> msg_stack2;
+std::map<uint32_t ,CAN_message_t> buffer_table3;
+std::vector<CAN_message_t> msg_stack3;
 
-std::map<uint32_t, bool> is_can_contact[3];
-std::map<uint32_t, uint32_t> time_stamp[3];
+std::map<uint32_t, bool> is_can1_contact;
+std::map<uint32_t, bool> is_can2_contact;
+std::map<uint32_t, bool> is_can3_contact;
+std::map<uint32_t, uint32_t> time_stamp1;
+std::map<uint32_t, uint32_t> time_stamp2;
+std::map<uint32_t, uint32_t> time_stamp3;
 
 void canSniff1(const CAN_message_t &msg){
-	is_can_contact[0][msg.id] = true;
-	buffer_table[0][msg.id] = msg;
-	time_stamp[0][msg.id] = millis();
+	is_can1_contact[msg.id] = true;
+	buffer_table1[msg.id] = msg;
+	time_stamp1[msg.id] = millis();
 }
 
 void canSniff2(const CAN_message_t &msg){
-	is_can_contact[1][msg.id] = true;
-	buffer_table[1][msg.id] = msg;
-	time_stamp[1][msg.id] = millis();
+	is_can2_contact[msg.id] = true;
+	buffer_table2[msg.id] = msg;
+	time_stamp2[msg.id] = millis();
 }
 
 void canSniff3(const CAN_message_t &msg){
-	is_can_contact[2][msg.id] = true;
-	buffer_table[2][msg.id] = msg;
-	time_stamp[2][msg.id] = millis();
+	is_can3_contact[msg.id] = true;
+	buffer_table3[msg.id] = msg;
+	time_stamp3[msg.id] = millis();
 }
 
 CanControl::CanControl(uint8_t _canbus){
@@ -72,32 +80,32 @@ void CanControl::init(int baudrate){
 
 void CanControl::resetTable(){
 	if(_can1){
-		buffer_table[0].clear();
+		buffer_table1.clear();
 	}else if(_can2){
-		buffer_table[1].clear();
+		buffer_table2.clear();
 	}else if(_can3){
-		buffer_table[2].clear();
+		buffer_table3.clear();
 	}
 }
 
 void CanControl::CANDataPull(uint32_t id ,uint8_t data[8]){
 	CAN_message_t msg_;
 	if(_can1){
-		msg_ = buffer_table[0][id];
+		msg_ = buffer_table1[id];
 		for(int i = 0; i<8; i++){
 			data[i] = msg_.buf[i];
 		}
 		return;
 	}
 	if(_can2){
-		msg_ = buffer_table[1][id];
+		msg_ = buffer_table2[id];
 		for(int i = 0; i<8; i++){
 			data[i] = msg_.buf[i];
 		}
 		return;
 	}
 	if(_can3){
-		msg_ = buffer_table[2][id];
+		msg_ = buffer_table3[id];
 		for(int i = 0; i<8; i++){
 			data[i] = msg_.buf[i];
 		}
@@ -109,21 +117,21 @@ void CanControl::CANDataPush(uint32_t id, uint8_t data[8]){
 	MSG.id = id;
 	if(_can1){
 		memcpy(MSG.buf,data,8);
-		msg_stack[0].push_back(MSG);
+		msg_stack1.push_back(MSG);
 	}else if(_can2){
 		memcpy(MSG.buf,data,8);
-		msg_stack[1].push_back(MSG);
+		msg_stack2.push_back(MSG);
 	}else if(_can3){
 		memcpy(MSG.buf,data,8);
-		msg_stack[2].push_back(MSG);
+		msg_stack3.push_back(MSG);
 	}
 	return;
 }
 
 void CanControl::MsgStackClear(){
-	msg_stack[0].clear();
-	msg_stack[1].clear();
-	msg_stack[2].clear();
+	msg_stack1.clear();
+	msg_stack2.clear();
+	msg_stack3.clear();
 }
 
 void CanControl::CANMsgWrite(CAN_message_t msg){
@@ -142,31 +150,45 @@ int8_t CanControl::CANAllDataWrite(){
 	if(!is_can_open)return -1;
 	int8_t s = 0;
 	if(_can1){
-		for(CAN_message_t buff : msg_stack[0]){
+		for(CAN_message_t buff : msg_stack1){
 			Can1.write(buff);
 			s++;
 		}
 	}else if(_can2){
-		for(CAN_message_t buff : msg_stack[1]){
+		for(CAN_message_t buff : msg_stack2){
 			Can2.write(buff);
 			s++;
 		}
 	}else if(_can3){
-		for(CAN_message_t buff : msg_stack[2]){
+		for(CAN_message_t buff : msg_stack3){
 			Can3.write(buff);
 			s++;
 		}
 	}
-	msg_stack[0].clear();
-	msg_stack[1].clear();
-	msg_stack[2].clear();
+	msg_stack1.clear();
+	msg_stack2.clear();
+	msg_stack3.clear();
 	return s;
 }
 
 bool CanControl::check_is_contact(uint16_t id){
-	if((millis() - time_stamp[canbus-1][id]) < TIMEOUT_TIME){
-		return 1;
-	}else{
-		return 0;
+	if(_can1){
+		if((millis() - time_stamp1[id]) < TIMEOUT_TIME){
+			return 1;
+		}else{
+			return 0;
+		}
+	}else if(_can2){
+		if((millis() - time_stamp2[id]) < TIMEOUT_TIME){
+			return 1;
+		}else{
+			return 0;
+		}
+	}else if(_can3){
+		if((millis() - time_stamp3[id]) < TIMEOUT_TIME){
+			return 1;
+		}else{
+			return 0;
+		}
 	}
 }

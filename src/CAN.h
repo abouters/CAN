@@ -7,8 +7,12 @@
 
 #define TIMEOUT_TIME 10	//CAN通信のタイムアウトの時間を設定する[ms]
 
-extern std::map<uint32_t, bool> is_can_contact[3];
-extern std::map<uint32_t, uint32_t> time_stamp[3];
+extern std::map<uint32_t, bool> is_can1_contact;
+extern std::map<uint32_t, bool> is_can2_contact;
+extern std::map<uint32_t, bool> is_can3_contact;
+extern std::map<uint32_t, uint32_t> time_stamp1;
+extern std::map<uint32_t, uint32_t> time_stamp2;
+extern std::map<uint32_t, uint32_t> time_stamp3;
 
 class CanControl{
 	public:
